@@ -1,60 +1,62 @@
----
-# This workflow integrates Harness SAST and SCA with GitHub
-# Visit https://docs.shiftleft.io for help
-name: Harness SAST and SCA
+name: Qwiet AI Static Analysis
 
 on:
   pull_request:
   workflow_dispatch:
+  push:
 
 jobs:
   NextGen-Static-Analysis:
+    permissions:
+      contents: read # Required for actions/checkout to fetch code
+      security-events: write # Required for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # Needed in private repositories for github/codeql-action/upload-sarif
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup Java JDK v11.0.x
-      uses: actions/setup-java@v3
-      with:
-        distribution: zulu
-        java-version: 11.0.x
+      - name: Checkout repository  # This is necessary to access your code
+        uses: actions/checkout@v3
 
-    - name: Download Harness SAST and SCA CLI
-      run: |
-        curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
+      # --- Setup Development Environment (Modify as needed) ---
+      # Uncomment and customize based on the language of your project
 
-    - name: preZero Static Analysis
-      run: |
-        ${GITHUB_WORKSPACE}/sl --version
-        ${GITHUB_WORKSPACE}/sl analyze --strict --wait \
-          --app shiftleft-ruby-demo \
-          --tag branch=${{ github.head_ref }} \
-          --ruby --container 18fgsa/s3-resource .
-      env:
-        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
-        SHIFTLEFT_API_HOST: www.shiftleft.io
-        SHIFTLEFT_GRPC_TELEMETRY_HOST: telemetry.shiftleft.io:443
-        SHIFTLEFT_GRPC_API_HOST: api.shiftleft.io:443
+      # - name: Setup Python
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: '3.x'
+      # - name: Install Python dependencies
+      #   run: pip install -r requirements.txt
 
-  Build-Rules:
-    runs-on: ubuntu-latest
-    permissions: write-all
-    needs: NextGen-Static-Analysis
-    steps:
-    - uses: actions/checkout@v3
-    - name: Download Harness SAST and SCA CLI
-      run: |
-        curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
-    - name: Validate Build Rules
-      run: |
-        ${GITHUB_WORKSPACE}/sl check-analysis --app shiftleft-ruby-demo \
-            --github-pr-number=${{github.event.number}} \
-            --github-pr-user=${{ github.repository_owner }} \
-            --github-pr-repo=${{ github.event.repository.name }} \
-            --github-token=${{ secrets.GITHUB_TOKEN }}
-      env:
-        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
-        SHIFTLEFT_API_HOST: www.shiftleft.io
-        SHIFTLEFT_GRPC_TELEMETRY_HOST: telemetry.shiftleft.io:443
-        SHIFTLEFT_GRPC_API_HOST: api.shiftleft.io:443
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      # - name: Install Node.js dependencies
+      #   run: npm install
 
+      # - name: Setup Java
+      #   uses: actions/setup-java@v3
+      #   with:
+      #     distribution: 'temurin'
+      #     java-version: '17'
+      # - name: Build Java project
+      #   run: mvn clean install
 
+      # - name: Setup .NET
+      #   uses: actions/setup-dotnet@v3
+      #   with:
+      #     dotnet-version: '6.0.x'
+      # - name: Restore .NET dependencies
+      #   run: dotnet restore
+      - name: Setup Java JDK v11.0.x
+        uses: actions/setup-java@v3
+        with:
+          distribution: zulu
+          java-version: 11.0.x
+
+      - name: Run Qwiet AI Scan
+        uses: sandy-qwietai/qwietai-actions@main
+        # Uncomment the below block to disable sarif report generation and upload
+        # with:                                  
+        #   enable_sarif: "false"
+        env:
+          SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
